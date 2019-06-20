@@ -3,6 +3,7 @@ from kashgari.tasks.seq_labeling import BLSTMCRFModel
 import tensorflow as tf
 from configparser import ConfigParser
 from clr_callback import *
+import logging
 
 
 def set_sess_cfg():
@@ -18,17 +19,22 @@ def main():
     cp.read(config_file)
 
     # default config
-    model_fold = cp["EVALUATION"].get("model_fold")
+    model_fold = cp["TEST"].get("model_fold")
     output_dir = os.path.join('experiments', model_fold)
-
-    test_x, test_y = CoNLL2003Corpus.get_sequence_tagging_data('test')
 
     model_path = os.path.join(output_dir, 'model')
     model = BLSTMCRFModel.load_model(model_path)
-    report_evaluate = model.evaluate(test_x, test_y, debug_info=True)
+    sentence = 'China and the United States are about the same size'
+    sentence_list = sentence.split()
+    result = model.predict(sentence_list)
+    result_dict = model.predict(sentence_list, output_dict=True)
+    print(f'the sentence is {sentence}')
+    print(f'the result is {result}')
+    print(f'the result of dict is {result_dict}')
+    logging.info('test predict: {} -> {}'.format(sentence_list, result))
 
-    with open(os.path.join(output_dir, 'report_evaluate.log'), 'w') as f:
-        f.write(f"The evaluate report is : {str(report_evaluate)}\n")
+    with open(os.path.join(output_dir, 'result_predict.log'), 'w') as f:
+        f.write(f"The predict result is : {str(result)}\n")
 
 if __name__ == "__main__":
     set_sess_cfg()

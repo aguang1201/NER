@@ -3,13 +3,13 @@ from kashgari.embeddings import BERTEmbedding
 from kashgari.tasks.seq_labeling import BLSTMCRFModel
 import tensorflow as tf
 from configparser import ConfigParser
-import datetime
 import shutil
 from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau, EarlyStopping
 from math import ceil
 from clr_callback import *
 import matplotlib.pyplot as plt
 from callback import SaveMinLoss
+import datetime
 
 
 def set_sess_cfg():
