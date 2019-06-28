@@ -30,6 +30,7 @@ def main():
     batch_size = cp["TRAIN"].getint("batch_size")
     generator_workers = cp["TRAIN"].getint("generator_workers")
     output_weights_name = cp["TRAIN"].get("output_weights_name")
+    sequence_length_max = cp["TRAIN"].getint("sequence_length_max")
     output_model_name = cp["TRAIN"].get("output_model_name")
     save_weights_only = cp["TRAIN"].getboolean("save_weights_only")
     cyclicLR_mode = cp["TRAIN"].get("cyclicLR_mode")
@@ -55,7 +56,7 @@ def main():
     test_x, test_y = CoNLL2003Corpus.get_sequence_tagging_data('test')
 
     #'bert-large-cased'
-    embedding = BERTEmbedding('bert-large-cased', 30)
+    embedding = BERTEmbedding('bert-large-cased', sequence_length_max)
     # 还可以选择 `BLSTMModel` 和 `CNNLSTMModel`
     model = BLSTMCRFModel(embedding)
     # model.build_model(train_x, train_y)
