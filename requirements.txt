@@ -1,0 +1,7 @@
+tensorflow==1.13.1
+Flask==1.0.2
+Keras==2.2.2
+kashgari==0.2.3
+matplotlib==2.2.3
+numpy==1.14.3
+scikit_learn==0.21.2

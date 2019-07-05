@@ -88,7 +88,7 @@ def main():
         checkpoint,
         tb,
         csv_logger,
-        clr,
+        # clr,
         save_min_loss,
         earlystop,
     ]

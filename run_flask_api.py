@@ -15,7 +15,7 @@ from flask import Flask, jsonify
 from kashgari.tasks.seq_labeling import BLSTMCRFModel
 from configparser import ConfigParser
 import os
-from bert_blstm_crf_eng import set_sess_cfg
+from bert_blstm_crf_eng_train import set_sess_cfg
 
 
 app = Flask(__name__)
