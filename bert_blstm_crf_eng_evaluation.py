@@ -28,7 +28,7 @@ def main():
     report_evaluate = model.evaluate(test_x, test_y, debug_info=True)
 
     with open(os.path.join(output_dir, 'report_evaluate.log'), 'w') as f:
-        f.write(f"The evaluate report is : {str(report_evaluate)}\n")
+        f.write(f"The evaluate report is :\n {str(report_evaluate)}\n")
 
 if __name__ == "__main__":
     set_sess_cfg()
