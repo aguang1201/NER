@@ -33,3 +33,15 @@ def main():
 if __name__ == "__main__":
     set_sess_cfg()
     main()
+
+'''
+           precision    recall  f1-score   support
+
+     MISC     0.7314    0.6838    0.7068       661
+      ORG     0.7743    0.7393    0.7564      1592
+      LOC     0.8484    0.8758    0.8619      1578
+      PER     0.8436    0.8548    0.8492      1495
+
+micro avg     0.8120    0.8053    0.8086      5326
+macro avg     0.8104    0.8053    0.8075      5326
+'''

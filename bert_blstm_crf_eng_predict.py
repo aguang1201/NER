@@ -39,3 +39,9 @@ def main():
 if __name__ == "__main__":
     set_sess_cfg()
     main()
+
+'''
+the sentence is China and the United States are about the same size
+the result is ['B-LOC', 'O', 'O', 'B-LOC', 'I-LOC', 'O', 'O', 'O', 'O', 'O']
+the result of dict is {'words': ['China', 'and', 'the', 'United', 'States', 'are', 'about', 'the', 'same', 'size'], 'entities': [{'text': 'China', 'type': 'LOC', 'beginOffset': 0, 'endOffset': 1}, {'text': 'United States', 'type': 'LOC', 'beginOffset': 3, 'endOffset': 5}]}
+'''
