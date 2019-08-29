@@ -1,25 +1,37 @@
+#coding:utf-8
+from kashgari.tasks.classification import BLSTMModel
 from kashgari.corpus import SMP2018ECDTCorpus
 from kashgari.embeddings import BERTEmbedding
 #from kashgari.tasks.seq_labeling import BLSTMModel
-from kashgari.tasks.labeling import BiLSTM_Model
+#from kashgari.tasks.labeling import BiLSTM_Model
 import tensorflow as tf
 from configparser import ConfigParser
 import shutil
-from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau, EarlyStopping
+#from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau, EarlyStopping
+from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
 from math import ceil
 from clr_callback import *
-import matplotlib.pyplot as plt
 from callback import SaveMinLoss
 import datetime
 import kashgari
 from tensorflow.python.keras.utils import get_file
 from kashgari.macros import DATA_PATH
+import pandas as pd
+import MeCab
 
 def set_sess_cfg():
     config_sess = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
     config_sess.gpu_options.allow_growth = True
     sess = tf.Session(config=config_sess)
     K.set_session(sess)
+
+def preprocess(file):
+    df = pd.read_csv(file)
+    mecab = MeCab.Tagger("-Owakati")
+    #result = mecab.parse(text)
+    x = df['content'].map(lambda x:mecab.parse(x).split(' ')).tolist()
+    y = df['target'].values.tolist()
+    return x, y
 
 def main():
     # parser config
@@ -39,6 +51,9 @@ def main():
     cyclicLR_mode = cp["TRAIN"].get("cyclicLR_mode")
     base_lr = cp["TRAIN"].getfloat("base_lr")
     max_lr = cp["TRAIN"].getfloat("max_lr")
+    file_train = cp["TRAIN"].get("file_train")
+    file_valid = cp["TRAIN"].get("file_valid")
+    file_test = cp["TRAIN"].get("file_test")
 
     today = datetime.date.today()
     formatted_today = today.strftime('%y%m%d')
@@ -59,15 +74,15 @@ def main():
                          cache_dir=DATA_PATH,
                          untar=True)
 
-    train_x, train_y = SMP2018ECDTCorpus.load_data('train')
-    validate_x, validate_y = SMP2018ECDTCorpus.load_data('valid')
-    test_x, test_y = SMP2018ECDTCorpus.load_data('test')
+    train_x, train_y = preprocess(file_train)
+    validate_x, validate_y = preprocess(file_valid)
+    test_x, test_y = preprocess(file_test)
 
     #'bert-large-cased'
     embedding = BERTEmbedding(bert_path, sequence_length=sequence_length_max, task=kashgari.CLASSIFICATION)
     # 还可以选择 CNNModel CNNLSTMModel
-    #model = BLSTMModel(embedding)
-    model = BiLSTM_Model(embedding)
+    model = BLSTMModel(embedding)
+    #model = BiLSTM_Model(embedding)
     # model.build_model(train_x, train_y)
     # model.build_multi_gpu_model(gpus=2)
     # print(model.summary())
@@ -108,13 +123,14 @@ def main():
               y_validate=validate_y,
               epochs=epochs,
               batch_size=batch_size,
-              #labels_weight=True,
               callbacks=callbacks,
               fit_kwargs={
+                          #'callbacks': callbacks,
                           'workers': generator_workers,
                           'use_multiprocessing': True,
                           'class_weight': 'auto',
-                          })
+                          }
+              )
 
     model_path = os.path.join(output_dir, 'model')
     model.save(model_path)
