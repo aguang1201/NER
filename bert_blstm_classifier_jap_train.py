@@ -83,6 +83,8 @@ def main():
                               task=kashgari.CLASSIFICATION,
                               trainable=True,
                               layer_nums=4)
+    #embedding = BERTEmbedding('/home/ys1/pretrained_models/BERT/Japanese_L-12_H-768_A-12_E-30_BPE/', sequence_length=sequence_length_max, task=kashgari.CLASSIFICATION)
+
     # 还可以选择 CNNModel CNNLSTMModel
     # model = BiGRU_Model(embedding)
     hyper = BiLSTM_Model.get_default_hyper_parameters()
