@@ -1,14 +1,12 @@
 #coding:utf-8
-from kashgari.tasks.classification import BLSTMModel
-from kashgari.corpus import SMP2018ECDTCorpus
+from kashgari.callbacks import EvalCallBack
+from kashgari.tasks.classification import BiLSTM_Model, BiGRU_Model, BLSTMModel, BGRUModel
 from kashgari.embeddings import BERTEmbedding
-#from kashgari.tasks.seq_labeling import BLSTMModel
-#from kashgari.tasks.labeling import BiLSTM_Model
+# from kashgari.tasks.labeling import BiLSTM_Model, BiGRU_Model
 import tensorflow as tf
 from configparser import ConfigParser
 import shutil
-#from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau, EarlyStopping
-from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
+from tensorflow.python import keras
 from math import ceil
 from clr_callback import *
 from callback import SaveMinLoss
@@ -18,6 +16,7 @@ from tensorflow.python.keras.utils import get_file
 from kashgari.macros import DATA_PATH
 import pandas as pd
 import MeCab
+import logging
 
 def set_sess_cfg():
     config_sess = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
@@ -68,7 +67,7 @@ def main():
     shutil.copy(config_file, os.path.join(output_dir_src, os.path.split(config_file)[1]))
     train_file = os.path.basename(__file__)
     shutil.copy(train_file, os.path.join(output_dir_src, train_file))
-
+    logging.basicConfig(level='DEBUG')
     bert_path = get_file('bert_sample_model',
                          "http://s3.bmio.net/kashgari/bert_sample_model.tar.bz2",
                          cache_dir=DATA_PATH,
@@ -79,10 +78,18 @@ def main():
     test_x, test_y = preprocess(file_test)
 
     #'bert-large-cased'
-    embedding = BERTEmbedding(bert_path, sequence_length=sequence_length_max, task=kashgari.CLASSIFICATION)
+    embedding = BERTEmbedding(bert_path,
+                              sequence_length=sequence_length_max,
+                              task=kashgari.CLASSIFICATION,
+                              trainable=True,
+                              layer_nums=4)
     # 还可以选择 CNNModel CNNLSTMModel
-    model = BLSTMModel(embedding)
-    #model = BiLSTM_Model(embedding)
+    # model = BiGRU_Model(embedding)
+    hyper = BiLSTM_Model.get_default_hyper_parameters()
+    print(f'hyper parameters is:{hyper}')
+    #hyper parameters is:{'layer_bi_lstm': {'units': 128, 'return_sequences': False}, 'layer_dense': {'activation': 'softmax'}}
+    # hyper['layer_bi_lstm']['units'] = 32
+    model = BiLSTM_Model(embedding, hyper_parameters=hyper)
     # model.build_model(train_x, train_y)
     # model.build_multi_gpu_model(gpus=2)
     # print(model.summary())
@@ -92,14 +99,14 @@ def main():
     else:
         model_weights = os.path.join(output_dir, output_model_name)
 
-    checkpoint = ModelCheckpoint(
+    checkpoint = keras.callbacks.ModelCheckpoint(
         model_weights,
         save_weights_only=save_weights_only,
         save_best_only=True,
         verbose=1,
     )
-    earlystop = EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=0, mode='min')
-    csv_logger = CSVLogger(os.path.join(output_dir, 'training.csv'))
+    earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=0, mode='min')
+    csv_logger = keras.callbacks.CSVLogger(os.path.join(output_dir, 'training.csv'))
     batch_size_cycliclr = ceil(len(train_x)/batch_size)
     if cyclicLR_mode == 'exp_range':
         gamma = 0.99994
@@ -107,15 +114,22 @@ def main():
         gamma = 1.
     clr = CyclicLR(mode=cyclicLR_mode, step_size=batch_size_cycliclr, base_lr=base_lr, max_lr=max_lr, gamma=gamma)
     save_min_loss = SaveMinLoss(filepath=output_dir)
-    tb = TensorBoard(log_dir=os.path.join(output_dir, "logs"), batch_size=batch_size)
+    tb = keras.callbacks.TensorBoard(log_dir=os.path.join(output_dir, "logs"), batch_size=batch_size, update_freq=1000)
+    # 这是 Kashgari 内置回调函数，会在训练过程计算精确度，召回率和 F1
+    eval_callback = EvalCallBack(kash_model=model,
+                                 valid_x=validate_x,
+                                 valid_y=validate_y,
+                                 step=5)
     callbacks = [
+        eval_callback,
         checkpoint,
         tb,
         csv_logger,
-        clr,
+        # clr,
         save_min_loss,
         earlystop,
     ]
+
     print("** start training **")
     model.fit(train_x,
               train_y,
@@ -125,7 +139,6 @@ def main():
               batch_size=batch_size,
               callbacks=callbacks,
               fit_kwargs={
-                          #'callbacks': callbacks,
                           'workers': generator_workers,
                           'use_multiprocessing': True,
                           'class_weight': 'auto',

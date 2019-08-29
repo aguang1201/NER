@@ -4,17 +4,18 @@ import numpy as np
 import os
 import shutil
 import warnings
-from keras.callbacks import Callback
+# from keras.callbacks import Callback
 from sklearn.metrics import roc_auc_score
+from tensorflow.python import keras
 
 
-class SaveMinLoss(Callback):
+class SaveMinLoss(keras.callbacks.Callback):
     """
     Checkpointing callback for multi_gpu_model
     copy from https://github.com/keras-team/keras/issues/8463
     """
     def __init__(self, filepath, monitor='val_loss', verbose=0, mode='auto', period=1):
-        super(Callback, self).__init__()
+        super(SaveMinLoss, self).__init__()
         self.monitor = monitor
         self.verbose = verbose
         self.filepath = filepath
